@@ -1,8 +1,10 @@
 import {
+  AlertCircle,
   Check,
   HelpCircle,
   Lightbulb,
   Loader2,
+  RotateCcw,
   Sparkles,
   Wand2,
   X,
@@ -88,6 +90,101 @@ export function AIGenerateModal({
     onClose();
   };
 
+  const handleGenerateFallbackTemplate = () => {
+    const rawTopic = topic.trim() || 'General Knowledge';
+    const count = Math.min(Math.max(numQuestions || 5, 1), 10);
+
+    const templates = [
+      {
+        questionText: `Which of the following is considered a core fundamental principle of ${rawTopic}?`,
+        options: [
+          { id: 'A', text: `Primary standard guideline and foundational concept of ${rawTopic}` },
+          { id: 'B', text: 'Unrelated variable with secondary application only' },
+          { id: 'C', text: 'Deprecated legacy framework from historical archives' },
+          { id: 'D', text: 'Non-standard alternate approach' },
+        ],
+        correctOptionId: 'A',
+        explanation: `This represents an essential core principle within the study and application of ${rawTopic}.`,
+      },
+      {
+        questionText: `What is the primary objective or main benefit when applying concepts in ${rawTopic}?`,
+        options: [
+          { id: 'A', text: 'To produce random unintended anomalies' },
+          { id: 'B', text: `To achieve structured, accurate, and reliable outcomes in ${rawTopic}` },
+          { id: 'C', text: 'To increase operational complexity unnecessarily' },
+          { id: 'D', text: 'To circumvent systematic testing and verification' },
+        ],
+        correctOptionId: 'B',
+        explanation: `The primary objective in ${rawTopic} is achieving structured, verified, and reliable results.`,
+      },
+      {
+        questionText: `Which factor is most crucial to evaluate when analyzing problems related to ${rawTopic}?`,
+        options: [
+          { id: 'A', text: 'Arbitrary speculation without data' },
+          { id: 'B', text: 'Ignoring foundational prerequisites' },
+          { id: 'C', text: 'Accurate data, contextual parameters, and objective metrics' },
+          { id: 'D', text: 'Only superficial visual elements' },
+        ],
+        correctOptionId: 'C',
+        explanation: `Accurate evaluation in ${rawTopic} relies upon verified metrics and contextual evidence.`,
+      },
+      {
+        questionText: `In professional or academic practice associated with ${rawTopic}, what does standard best practice dictate?`,
+        options: [
+          { id: 'A', text: 'Adhering to validated methods and systematic verification' },
+          { id: 'B', text: 'Avoiding peer reviews and documentation' },
+          { id: 'C', text: 'Relying exclusively on unverified guesswork' },
+          { id: 'D', text: 'Skipping error handling procedures' },
+        ],
+        correctOptionId: 'A',
+        explanation: `Best practices establish validated workflows and rigorous verification for quality assurance.`,
+      },
+      {
+        questionText: `Which of the following best describes the real-world significance and application of ${rawTopic}?`,
+        options: [
+          { id: 'A', text: 'It was quickly abandoned without practical use' },
+          { id: 'B', text: `It provides critical foundation for research, problem-solving, and practical execution` },
+          { id: 'C', text: 'It only applies in purely hypothetical scenarios' },
+          { id: 'D', text: 'It has no relevance to modern practices' },
+        ],
+        correctOptionId: 'B',
+        explanation: `${rawTopic} remains a fundamental pillar that drives practical solutions and deeper understanding.`,
+      },
+      {
+        questionText: `When diagnosing or troubleshooting an issue in ${rawTopic}, what is the recommended first step?`,
+        options: [
+          { id: 'A', text: 'Isolate variables and identify initial symptom causes' },
+          { id: 'B', text: 'Discard all existing configuration files' },
+          { id: 'C', text: 'Assume the most extreme worst-case scenario' },
+          { id: 'D', text: 'Change multiple random factors simultaneously' },
+        ],
+        correctOptionId: 'A',
+        explanation: `Isolating key variables and gathering evidence is the standard systematic approach.`,
+      },
+      {
+        questionText: `How does continuous review and assessment benefit learners studying ${rawTopic}?`,
+        options: [
+          { id: 'A', text: 'It guarantees confusion and lower retention' },
+          { id: 'B', text: 'It reinforces key conceptual schemas and long-term recall' },
+          { id: 'C', text: 'It eliminates the need for fundamental comprehension' },
+          { id: 'D', text: 'It has zero measurable impact on learning outcomes' },
+        ],
+        correctOptionId: 'B',
+        explanation: `Spaced retrieval and self-assessment significantly boost memory retention and comprehension.`,
+      },
+    ];
+
+    const generated = templates.slice(0, count).map((t, idx) => ({
+      id: `draft_${Date.now()}_${idx}`,
+      ...t,
+    }));
+
+    setGeneratedQuestions(generated);
+    setSuggestedTitle(`${rawTopic} Quiz`);
+    setSuggestedDescription(`A comprehensive ${difficulty.toLowerCase()} assessment covering core concepts in ${rawTopic}.`);
+    setError(null);
+  };
+
   return (
     <div
       className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-sm flex items-center justify-center p-3 sm:p-4 overflow-y-auto"
@@ -124,8 +221,35 @@ export function AIGenerateModal({
         {/* Modal Body */}
         <div className="p-5 sm:p-6 overflow-y-auto space-y-5 flex-1 text-slate-800">
           {error && (
-            <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs sm:text-sm font-medium">
-              {error}
+            <div className="p-4 rounded-2xl bg-amber-50/90 border border-amber-200 text-amber-950 space-y-3 shadow-sm">
+              <div className="flex items-start gap-2.5">
+                <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+                <div className="space-y-1">
+                  <div className="font-bold text-sm text-amber-900">AI Service Notice</div>
+                  <div className="text-xs sm:text-sm text-amber-800 leading-relaxed">{error}</div>
+                </div>
+              </div>
+
+              <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-amber-200/60">
+                <button
+                  type="button"
+                  onClick={handleGenerate}
+                  disabled={isGenerating}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs rounded-xl shadow-sm transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  <RotateCcw className="w-3.5 h-3.5" />
+                  <span>Retry with AI</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleGenerateFallbackTemplate}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-white hover:bg-amber-100/70 text-amber-900 font-semibold text-xs rounded-xl border border-amber-300 shadow-sm transition-colors cursor-pointer"
+                >
+                  <Sparkles className="w-3.5 h-3.5 text-amber-600" />
+                  <span>Generate Quick Draft Questions</span>
+                </button>
+              </div>
             </div>
           )}
 

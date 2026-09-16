@@ -5,9 +5,11 @@ import {
   Check,
   CheckCircle2,
   Clock,
+  Download,
   ExternalLink,
   HelpCircle,
   Loader2,
+  PartyPopper,
   RotateCcw,
   Share2,
   Sparkles,
@@ -15,6 +17,8 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { explainQuestionWithAI } from '../lib/api';
+import { celebrationAudio } from '../lib/audioUtils';
+import { exportSingleScorecardCsv } from '../lib/exportUtils';
 import { ActivePage, Exam, ExamAttempt, Question } from '../types';
 
 interface ResultPageProps {
@@ -28,10 +32,12 @@ export function ResultPage({ attempt, exam, onNavigate }: ResultPageProps) {
   const [copiedShare, setCopiedShare] = useState(false);
   const [aiExplanations, setAiExplanations] = useState<Record<string, string>>({});
   const [loadingAi, setLoadingAi] = useState<Record<string, boolean>>({});
+  const [aiErrors, setAiErrors] = useState<Record<string, string>>({});
 
   const handleRequestAiExplanation = async (q: Question, selectedOptId: string) => {
-    if (loadingAi[q.id] || aiExplanations[q.id]) return;
+    if (loadingAi[q.id]) return;
     setLoadingAi((prev) => ({ ...prev, [q.id]: true }));
+    setAiErrors((prev) => ({ ...prev, [q.id]: '' }));
     try {
       const text = await explainQuestionWithAI({
         questionText: q.questionText,
@@ -41,7 +47,7 @@ export function ResultPage({ attempt, exam, onNavigate }: ResultPageProps) {
       });
       setAiExplanations((prev) => ({ ...prev, [q.id]: text }));
     } catch (err: any) {
-      setAiExplanations((prev) => ({
+      setAiErrors((prev) => ({
         ...prev,
         [q.id]: err.message || 'Failed to generate explanation.',
       }));
@@ -50,18 +56,25 @@ export function ResultPage({ attempt, exam, onNavigate }: ResultPageProps) {
     }
   };
 
+  const triggerCelebration = () => {
+    try {
+      // Dual-cannon celebration confetti
+      confetti({
+        particleCount: 100,
+        spread: 70,
+        origin: { y: 0.6 },
+        colors: ['#2563eb', '#38bdf8', '#10b981', '#f59e0b', '#ec4899', '#8b5cf6'],
+      });
+      celebrationAudio.playVictoryChime();
+    } catch (e) {
+      // Fallback gracefully
+    }
+  };
+
   useEffect(() => {
-    // Fire celebratory confetti if user passed or scored >= 70%
+    // Fire celebratory confetti and audio if user passed or scored >= 70%
     if (attempt.passed || attempt.scorePercent >= 70) {
-      try {
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.6 },
-        });
-      } catch (e) {
-        // Fallback gracefully
-      }
+      triggerCelebration();
     }
   }, [attempt.passed, attempt.scorePercent]);
 
@@ -158,8 +171,17 @@ export function ResultPage({ attempt, exam, onNavigate }: ResultPageProps) {
         {exam.settings.passingScorePercent > 0 && (
           <div className="max-w-md mx-auto">
             {attempt.passed ? (
-              <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm font-semibold">
-                🎉 Congratulations! You Passed!
+              <div className="p-3.5 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm font-semibold flex items-center justify-between gap-2">
+                <span>🎉 Congratulations! You Passed!</span>
+                <button
+                  type="button"
+                  onClick={triggerCelebration}
+                  className="inline-flex items-center gap-1 px-2.5 py-1 bg-white hover:bg-emerald-100 text-emerald-800 border border-emerald-300 rounded-lg text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  title="Trigger celebration confetti and chime again"
+                >
+                  <PartyPopper className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>Confetti 🎊</span>
+                </button>
               </div>
             ) : (
               <div className="p-3.5 bg-slate-100 border border-slate-200 text-slate-700 rounded-xl text-sm font-medium">
@@ -231,8 +253,19 @@ export function ResultPage({ attempt, exam, onNavigate }: ResultPageProps) {
           </button>
 
           <button
+            type="button"
+            onClick={() => exportSingleScorecardCsv(exam, attempt)}
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 bg-emerald-50 hover:bg-emerald-100 active:bg-emerald-200 text-emerald-800 border border-emerald-300 font-semibold text-sm rounded-xl transition-colors focus:outline-none cursor-pointer"
+            id="result-btn-download-csv"
+            title="Download detailed scorecard as an Excel-ready CSV"
+          >
+            <Download className="w-4 h-4" />
+            Download Scorecard (CSV)
+          </button>
+
+          <button
             onClick={() => onNavigate({ type: 'home' })}
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 text-slate-600 hover:text-slate-900 font-semibold text-sm rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-5 py-3 text-slate-600 hover:text-slate-900 font-semibold text-sm rounded-xl border border-slate-200 hover:bg-slate-50 transition-colors cursor-pointer"
             id="result-btn-home"
           >
             Back to Home
@@ -329,12 +362,12 @@ export function ResultPage({ attempt, exam, onNavigate }: ResultPageProps) {
                         <p className="leading-relaxed">{aiExplanations[q.id]}</p>
                       </div>
                     ) : (
-                      <div className="pt-1">
+                      <div className="pt-1 space-y-1.5">
                         <button
                           type="button"
                           onClick={() => handleRequestAiExplanation(q, selectedOptId)}
                           disabled={loadingAi[q.id]}
-                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 rounded-md transition-colors shadow-2xs cursor-pointer"
+                          className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-semibold text-blue-700 bg-white hover:bg-blue-50 border border-blue-200 rounded-md transition-colors shadow-2xs cursor-pointer disabled:opacity-50"
                         >
                           {loadingAi[q.id] ? (
                             <>
@@ -344,10 +377,15 @@ export function ResultPage({ attempt, exam, onNavigate }: ResultPageProps) {
                           ) : (
                             <>
                               <Sparkles className="w-3 h-3 text-blue-600" />
-                              <span>Explain with AI</span>
+                              <span>{aiErrors[q.id] ? 'Retry AI Explanation' : 'Explain with AI'}</span>
                             </>
                           )}
                         </button>
+                        {aiErrors[q.id] && (
+                          <div className="text-[11px] text-amber-800 bg-amber-50 p-2 rounded-md border border-amber-200 leading-snug">
+                            {aiErrors[q.id]}
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>

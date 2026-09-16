@@ -28,6 +28,88 @@ function getAI(): GoogleGenAI {
   return aiClient;
 }
 
+// Robust multi-model fallback and retry handler for high demand spikes (503 / 429)
+const modelHealthStatus: Record<string, number> = {};
+
+async function generateContentWithFallback(params: {
+  contents: any;
+  config?: any;
+}) {
+  const ai = getAI();
+  // Models in fallback priority order; prioritize flash-lite which has highest throughput & low latency
+  const baseModels = ['gemini-3.1-flash-lite', 'gemini-flash-latest', 'gemini-3.8-flash'];
+  
+  // Sort models putting any recently overloaded model (within last 3 minutes) to the end
+  const now = Date.now();
+  const models = [...baseModels].sort((a, b) => {
+    const aCooling = (modelHealthStatus[a] || 0) > now;
+    const bCooling = (modelHealthStatus[b] || 0) > now;
+    if (aCooling && !bCooling) return 1;
+    if (!aCooling && bCooling) return -1;
+    return 0;
+  });
+
+  let lastError: any = null;
+
+  for (let i = 0; i < models.length; i++) {
+    const model = models[i];
+    try {
+      const response = await ai.models.generateContent({
+        model,
+        contents: params.contents,
+        config: params.config,
+      });
+      // Clear cooldown on success
+      delete modelHealthStatus[model];
+      return response;
+    } catch (err: any) {
+      lastError = err;
+      const raw = err?.message || String(err);
+
+      const isTransient =
+        raw.includes('503') ||
+        raw.includes('UNAVAILABLE') ||
+        raw.includes('high demand') ||
+        raw.includes('429') ||
+        raw.includes('RESOURCE_EXHAUSTED') ||
+        raw.includes('fetch failed');
+
+      if (isTransient) {
+        // Mark this model as needing 3-minute cooldown
+        modelHealthStatus[model] = Date.now() + 180000;
+      }
+
+      if (isTransient && i < models.length - 1) {
+        // Wait briefly before trying the next available model
+        await new Promise((resolve) => setTimeout(resolve, 300 * (i + 1)));
+        continue;
+      }
+    }
+  }
+
+  throw lastError;
+}
+
+function formatAiErrorMessage(err: any): string {
+  const raw = err?.message || String(err);
+  if (raw.includes('503') || raw.includes('UNAVAILABLE') || raw.includes('high demand')) {
+    return 'The AI model is currently experiencing high demand. Please click Retry in a few moments.';
+  }
+  if (raw.includes('429') || raw.includes('RESOURCE_EXHAUSTED')) {
+    return 'AI request limit reached temporarily. Please wait a moment and try again.';
+  }
+  if (raw.includes('GEMINI_API_KEY')) {
+    return 'GEMINI_API_KEY environment variable is not configured.';
+  }
+  try {
+    const match = raw.match(/\{"error":\s*\{.*?"message":\s*"([^"]+)"/);
+    if (match && match[1]) {
+      return match[1];
+    }
+  } catch (e) {}
+  return raw;
+}
+
 app.use(express.json());
 
 const DATA_DIR = path.join(process.cwd(), 'data');
@@ -647,8 +729,7 @@ Requirements:
 3. The questions should be clear, educational, factually accurate, and engaging.
 4. Provide a brief explanation for each question explaining why the correct choice is right.`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+    const response = await generateContentWithFallback({
       contents: prompt,
       config: {
         systemInstruction: 'You are an experienced educator and test creator who crafts clear, high-quality multiple-choice questions.',
@@ -709,8 +790,8 @@ Requirements:
     });
   } catch (err: any) {
     console.error('AI generate questions error:', err);
-    res.status(500).json({
-      error: err.message || 'Failed to generate questions with AI.',
+    res.status(503).json({
+      error: formatAiErrorMessage(err),
     });
   }
 });
@@ -724,8 +805,6 @@ app.post('/api/ai/explain-question', async (req, res) => {
       res.status(400).json({ error: 'Question text and correct option are required.' });
       return;
     }
-
-    const ai = getAI();
 
     const optionsText = Array.isArray(options)
       ? options.map((o: any) => `${o.id}: ${o.text}`).join('\n')
@@ -745,8 +824,7 @@ In 2 to 4 sentences:
 2. ${selectedOptionId && selectedOptionId !== correctOptionId ? `Address why Option ${selectedOptionId} was incorrect and clarify the distinction.` : 'Mention a key takeaway to help remember this concept.'}
 Keep the explanation friendly, accessible, and direct. Avoid markdown headings or excessive bullet points.`;
 
-    const response = await ai.models.generateContent({
-      model: 'gemini-3.8-flash',
+    const response = await generateContentWithFallback({
       contents: prompt,
       config: {
         systemInstruction: 'You are an encouraging, articulate, and knowledgeable AI academic tutor.',
@@ -758,8 +836,8 @@ Keep the explanation friendly, accessible, and direct. Avoid markdown headings o
     });
   } catch (err: any) {
     console.error('AI explain question error:', err);
-    res.status(500).json({
-      error: err.message || 'Failed to generate AI explanation.',
+    res.status(503).json({
+      error: formatAiErrorMessage(err),
     });
   }
 });

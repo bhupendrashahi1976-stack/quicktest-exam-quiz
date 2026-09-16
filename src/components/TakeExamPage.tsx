@@ -591,8 +591,16 @@ export function TakeExamPage({ examId, onNavigate }: TakeExamPageProps) {
             )}
 
             {aiError && (
-              <div className="text-xs text-red-600 bg-white/80 p-2 rounded-lg border border-red-200">
-                {aiError}
+              <div className="text-xs text-amber-900 bg-amber-50 p-2.5 rounded-lg border border-amber-200 flex items-center justify-between gap-2">
+                <span>{aiError}</span>
+                <button
+                  type="button"
+                  onClick={handleExplainWithAI}
+                  disabled={aiExplaining}
+                  className="px-2 py-1 bg-white hover:bg-amber-100 text-amber-900 font-bold rounded border border-amber-300 shadow-2xs transition-colors cursor-pointer disabled:opacity-50"
+                >
+                  Retry
+                </button>
               </div>
             )}
           </div>

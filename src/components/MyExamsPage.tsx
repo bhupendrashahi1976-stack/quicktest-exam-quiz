@@ -3,6 +3,7 @@ import {
   Check,
   Clock,
   Copy,
+  Download,
   Edit3,
   ExternalLink,
   FolderOpen,
@@ -12,7 +13,8 @@ import {
   Trash2,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
-import { deleteExam, duplicateExam, fetchExams } from '../lib/api';
+import { deleteExam, duplicateExam, fetchExams, fetchExamStats } from '../lib/api';
+import { exportExamAttemptsToCsv } from '../lib/exportUtils';
 import { ActivePage, Exam } from '../types';
 import { StatsModal } from './StatsModal';
 
@@ -61,6 +63,19 @@ export function MyExamsPage({ onNavigate }: MyExamsPageProps) {
       setExams((prev) => [duplicated, ...prev]);
     } catch (err: any) {
       alert(err.message || 'Failed to duplicate exam');
+    }
+  };
+
+  const handleExportCsv = async (exam: Exam) => {
+    try {
+      const stats = await fetchExamStats(exam.id);
+      if (!stats.recentAttempts || stats.recentAttempts.length === 0) {
+        alert('No attempts have been recorded for this exam yet.');
+        return;
+      }
+      exportExamAttemptsToCsv(exam.title, stats.recentAttempts);
+    } catch (err: any) {
+      alert(err.message || 'Failed to export results');
     }
   };
 
@@ -230,11 +245,20 @@ export function MyExamsPage({ onNavigate }: MyExamsPageProps) {
 
                   <button
                     onClick={() => setSelectedStatsExam(exam)}
-                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-semibold text-xs rounded-lg transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-semibold text-xs rounded-lg transition-colors cursor-pointer"
                     title="View Analytics & Results"
                   >
                     <BarChart3 className="w-3.5 h-3.5" />
                     Results
+                  </button>
+
+                  <button
+                    onClick={() => handleExportCsv(exam)}
+                    className="inline-flex items-center gap-1.5 px-2.5 py-1.5 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-semibold text-xs rounded-lg transition-colors cursor-pointer"
+                    title="Export participant results to CSV spreadsheet"
+                  >
+                    <Download className="w-3.5 h-3.5" />
+                    <span className="hidden sm:inline">CSV</span>
                   </button>
 
                   <button

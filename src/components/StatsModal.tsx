@@ -4,6 +4,7 @@ import {
   Calendar,
   CheckCircle2,
   Clock,
+  Download,
   TrendingUp,
   User,
   X,
@@ -11,6 +12,7 @@ import {
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { fetchExamStats } from '../lib/api';
+import { exportExamAttemptsToCsv } from '../lib/exportUtils';
 import { Exam, ExamStats } from '../types';
 
 interface StatsModalProps {
@@ -105,7 +107,20 @@ export function StatsModal({ exam, onClose }: StatsModalProps) {
 
               {/* Table of Attempts */}
               <div className="space-y-2.5">
-                <h3 className="text-sm font-bold text-slate-900">Recent Participant Submissions</h3>
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-bold text-slate-900">Recent Participant Submissions</h3>
+                  {stats.recentAttempts.length > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => exportExamAttemptsToCsv(exam.title, stats.recentAttempts)}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold transition-colors cursor-pointer"
+                      title="Download participant results as an Excel-ready CSV spreadsheet"
+                    >
+                      <Download className="w-3.5 h-3.5" />
+                      Export Results (CSV)
+                    </button>
+                  )}
+                </div>
                 <div className="border border-slate-200 rounded-2xl overflow-hidden">
                   <div className="max-h-64 overflow-y-auto">
                     <table className="w-full text-left text-xs">

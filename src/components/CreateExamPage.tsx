@@ -10,11 +10,13 @@ import {
   Settings2,
   Sparkles,
   Trash2,
+  UploadCloud,
 } from 'lucide-react';
 import { useEffect, useState } from 'react';
 import { createExam, fetchExam, updateExam } from '../lib/api';
 import { ActivePage, Exam, Question } from '../types';
 import { AIGenerateModal } from './AIGenerateModal';
+import { BulkUploadModal } from './BulkUploadModal';
 
 interface CreateExamPageProps {
   editExamId?: string;
@@ -47,7 +49,7 @@ export function CreateExamPage({ editExamId, onNavigate }: CreateExamPageProps) 
   const [description, setDescription] = useState('');
   
   // Settings
-  const [timeLimitType, setTimeLimitType] = useState<'off' | '5' | '10' | '15' | '30' | 'custom'>('off');
+  const [timeLimitType, setTimeLimitType] = useState<'off' | '1' | '5' | '10' | '15' | '20' | '30' | '45' | '60' | 'custom'>('off');
   const [customTimeMinutes, setCustomTimeMinutes] = useState<number>(20);
   const [passingScorePercent, setPassingScorePercent] = useState<number>(70);
   const [showAnswerImmediately, setShowAnswerImmediately] = useState<boolean>(true);
@@ -66,6 +68,21 @@ export function CreateExamPage({ editExamId, onNavigate }: CreateExamPageProps) 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isLoadingExam, setIsLoadingExam] = useState(false);
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
+  const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
+
+  const handleApplyBulkQuestions = (newQuestions: Question[], mode: 'append' | 'replace') => {
+    if (mode === 'replace') {
+      setQuestions(newQuestions);
+    } else {
+      // If the current only question is blank, replace it; otherwise append
+      if (questions.length === 1 && !questions[0].questionText.trim()) {
+        setQuestions(newQuestions);
+      } else {
+        setQuestions((prev) => [...prev, ...newQuestions]);
+      }
+    }
+    setValidationError(null);
+  };
 
   const handleApplyAiQuestions = (
     newQuestions: Question[],
@@ -106,7 +123,7 @@ export function CreateExamPage({ editExamId, onNavigate }: CreateExamPageProps) 
           if (exam.settings) {
             const minutes = exam.settings.timeLimitMinutes || 0;
             if (minutes === 0) setTimeLimitType('off');
-            else if ([5, 10, 15, 30].includes(minutes)) setTimeLimitType(String(minutes) as any);
+            else if ([1, 5, 10, 15, 20, 30, 45, 60].includes(minutes)) setTimeLimitType(String(minutes) as any);
             else {
               setTimeLimitType('custom');
               setCustomTimeMinutes(minutes);
@@ -368,19 +385,19 @@ export function CreateExamPage({ editExamId, onNavigate }: CreateExamPageProps) 
               <Clock className="w-4 h-4 text-slate-500" />
               Exam Time Limit
             </label>
-            <div className="flex flex-wrap gap-2">
-              {(['off', '5', '10', '15', '30', 'custom'] as const).map((t) => (
+            <div className="flex flex-wrap gap-1.5">
+              {(['off', '1', '5', '10', '15', '20', '30', '45', '60', 'custom'] as const).map((t) => (
                 <button
                   key={t}
                   type="button"
                   onClick={() => setTimeLimitType(t)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-medium border transition-colors ${
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
                     timeLimitType === t
-                      ? 'bg-blue-50 border-blue-500 text-blue-700 font-bold'
-                      : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                      ? 'bg-blue-600 border-blue-600 text-white font-bold shadow-xs'
+                      : 'bg-slate-50 border-slate-200 text-slate-700 hover:bg-slate-100'
                   }`}
                 >
-                  {t === 'off' ? 'OFF' : t === 'custom' ? 'Custom' : `${t}m`}
+                  {t === 'off' ? 'No Limit' : t === 'custom' ? 'Custom' : t === '1' ? '1m (Speed)' : `${t}m`}
                 </button>
               ))}
             </div>
@@ -396,6 +413,11 @@ export function CreateExamPage({ editExamId, onNavigate }: CreateExamPageProps) 
                 />
                 <span className="text-xs text-slate-600">minutes</span>
               </div>
+            )}
+            {timeLimitType !== 'off' && (
+              <p className="mt-1.5 text-[11px] text-slate-500">
+                ⏱️ Exam will display a live countdown timer and automatically submit answers when time expires.
+              </p>
             )}
           </div>
 
@@ -503,15 +525,28 @@ export function CreateExamPage({ editExamId, onNavigate }: CreateExamPageProps) 
             </span>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setIsAiModalOpen(true)}
-            className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition-all cursor-pointer"
-            id="create-btn-ai-generate"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Generate with AI</span>
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setIsBulkModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-slate-800 hover:bg-slate-900 text-white font-bold text-xs rounded-xl shadow-xs transition-all cursor-pointer"
+              id="create-btn-bulk-upload"
+              title="Upload questions from CSV, Excel, or formatted text"
+            >
+              <UploadCloud className="w-3.5 h-3.5" />
+              <span>Bulk Upload (CSV)</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => setIsAiModalOpen(true)}
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-bold text-xs rounded-xl shadow-md shadow-blue-500/20 transition-all cursor-pointer"
+              id="create-btn-ai-generate"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Generate with AI</span>
+            </button>
+          </div>
         </div>
 
         {questions.map((q, qIdx) => (
@@ -660,6 +695,16 @@ export function CreateExamPage({ editExamId, onNavigate }: CreateExamPageProps) 
 
           <button
             type="button"
+            onClick={() => setIsBulkModalOpen(true)}
+            className="inline-flex items-center justify-center gap-2 px-4 py-2.5 text-sm font-bold text-slate-800 bg-white hover:bg-slate-100 border border-slate-300 rounded-xl shadow-xs transition-all cursor-pointer"
+            id="create-btn-bulk-upload-bottom"
+          >
+            <UploadCloud className="w-4 h-4 text-slate-600" />
+            Bulk Upload (CSV)
+          </button>
+
+          <button
+            type="button"
             onClick={() => setIsAiModalOpen(true)}
             className="inline-flex items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 rounded-xl shadow-md shadow-blue-500/20 transition-all cursor-pointer"
             id="create-btn-ai-generate-bottom"
@@ -689,6 +734,14 @@ export function CreateExamPage({ editExamId, onNavigate }: CreateExamPageProps) 
           </button>
         </div>
       </div>
+
+      {/* Bulk Upload Modal */}
+      <BulkUploadModal
+        isOpen={isBulkModalOpen}
+        onClose={() => setIsBulkModalOpen(false)}
+        onApplyQuestions={handleApplyBulkQuestions}
+        existingQuestionsCount={questions.length}
+      />
 
       {/* AI Question Generator Modal */}
       <AIGenerateModal

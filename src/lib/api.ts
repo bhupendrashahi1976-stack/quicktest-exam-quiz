@@ -106,6 +106,24 @@ export interface GenerateAIQuestionsResponse {
   questions: Exam['questions'];
 }
 
+function cleanErrorMessage(raw: any, fallback: string): string {
+  if (!raw) return fallback;
+  const str = String(raw);
+  if (str.includes('503') || str.includes('UNAVAILABLE') || str.includes('high demand')) {
+    return 'The AI model is currently experiencing high demand. Please click Retry in a few seconds.';
+  }
+  if (str.includes('429') || str.includes('RESOURCE_EXHAUSTED')) {
+    return 'AI request limit reached temporarily. Please wait a moment and try again.';
+  }
+  try {
+    const match = str.match(/\{"error":\s*\{.*?"message":\s*"([^"]+)"/);
+    if (match && match[1]) {
+      return match[1];
+    }
+  } catch (e) {}
+  return str;
+}
+
 export async function generateQuestionsWithAI(params: GenerateAIQuestionsParams): Promise<GenerateAIQuestionsResponse> {
   const res = await fetch('/api/ai/generate-questions', {
     method: 'POST',
@@ -114,7 +132,7 @@ export async function generateQuestionsWithAI(params: GenerateAIQuestionsParams)
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || 'Failed to generate questions with AI');
+    throw new Error(cleanErrorMessage(data.error, 'Failed to generate questions with AI.'));
   }
   return res.json();
 }
@@ -132,7 +150,7 @@ export async function explainQuestionWithAI(params: {
   });
   if (!res.ok) {
     const data = await res.json().catch(() => ({}));
-    throw new Error(data.error || 'Failed to generate explanation');
+    throw new Error(cleanErrorMessage(data.error, 'Failed to generate explanation.'));
   }
   const data = await res.json();
   return data.explanation || '';
