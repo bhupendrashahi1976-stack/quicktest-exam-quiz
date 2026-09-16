@@ -1,0 +1,6 @@
+{
+  "name": "QuickTest — Online Exam & Quiz Creator",
+  "description": "Create multiple-choice online exams and quizzes, generate shareable links, and instantly check results.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

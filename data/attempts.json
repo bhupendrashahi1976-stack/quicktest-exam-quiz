@@ -1,0 +1,46 @@
+[
+  {
+    "id": "att_1789526928104_su86l",
+    "examId": "DEMO01",
+    "participantName": "Alice Cooper",
+    "totalQuestions": 5,
+    "correctAnswers": 4,
+    "wrongAnswers": 1,
+    "scorePercent": 80,
+    "passed": true,
+    "timeTakenSeconds": 85,
+    "submittedAt": "2026-09-16T02:48:48.104Z",
+    "answers": [
+      {
+        "questionId": "q1",
+        "selectedOptionId": "A",
+        "isCorrect": true,
+        "correctOptionId": "A"
+      },
+      {
+        "questionId": "q2",
+        "selectedOptionId": "B",
+        "isCorrect": true,
+        "correctOptionId": "B"
+      },
+      {
+        "questionId": "q3",
+        "selectedOptionId": "C",
+        "isCorrect": true,
+        "correctOptionId": "C"
+      },
+      {
+        "questionId": "q4",
+        "selectedOptionId": "B",
+        "isCorrect": true,
+        "correctOptionId": "B"
+      },
+      {
+        "questionId": "q5",
+        "selectedOptionId": "A",
+        "isCorrect": false,
+        "correctOptionId": "C"
+      }
+    ]
+  }
+]

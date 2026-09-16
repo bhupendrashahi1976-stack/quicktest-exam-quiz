@@ -1,0 +1,138 @@
+[
+  {
+    "id": "DEMO01",
+    "title": "Computer Basic Knowledge Test",
+    "description": "Test your basic computer knowledge with this quick online quiz.",
+    "settings": {
+      "timeLimitMinutes": 10,
+      "passingScorePercent": 70,
+      "showAnswerImmediately": true,
+      "randomizeQuestions": false,
+      "randomizeAnswers": false,
+      "allowRetake": true,
+      "requireParticipantName": true,
+      "showFinalScore": true,
+      "showAnswerReview": true
+    },
+    "createdAt": "2026-09-16T02:48:35.970Z",
+    "updatedAt": "2026-09-16T02:48:35.970Z",
+    "isPublished": true,
+    "questions": [
+      {
+        "id": "q1",
+        "questionText": "Who is the father of computer?",
+        "options": [
+          {
+            "id": "A",
+            "text": "Charles Babbage"
+          },
+          {
+            "id": "B",
+            "text": "Michael Ford"
+          },
+          {
+            "id": "C",
+            "text": "Charles Dakhirm"
+          },
+          {
+            "id": "D",
+            "text": "All of the above"
+          }
+        ],
+        "correctOptionId": "A"
+      },
+      {
+        "id": "q2",
+        "questionText": "What does CPU stand for?",
+        "options": [
+          {
+            "id": "A",
+            "text": "Central Process Unit"
+          },
+          {
+            "id": "B",
+            "text": "Central Processing Unit"
+          },
+          {
+            "id": "C",
+            "text": "Computer Personal Unit"
+          },
+          {
+            "id": "D",
+            "text": "Central Processor Universal"
+          }
+        ],
+        "correctOptionId": "B"
+      },
+      {
+        "id": "q3",
+        "questionText": "Which of the following is considered primary volatile memory?",
+        "options": [
+          {
+            "id": "A",
+            "text": "Hard Disk Drive (HDD)"
+          },
+          {
+            "id": "B",
+            "text": "USB Flash Drive"
+          },
+          {
+            "id": "C",
+            "text": "Random Access Memory (RAM)"
+          },
+          {
+            "id": "D",
+            "text": "Solid State Drive (SSD)"
+          }
+        ],
+        "correctOptionId": "C"
+      },
+      {
+        "id": "q4",
+        "questionText": "Which device is primarily used as an input device for typing text?",
+        "options": [
+          {
+            "id": "A",
+            "text": "Monitor"
+          },
+          {
+            "id": "B",
+            "text": "Keyboard"
+          },
+          {
+            "id": "C",
+            "text": "Speaker"
+          },
+          {
+            "id": "D",
+            "text": "Laser Printer"
+          }
+        ],
+        "correctOptionId": "B"
+      },
+      {
+        "id": "q5",
+        "questionText": "Which operating system is created and maintained by Apple Inc.?",
+        "options": [
+          {
+            "id": "A",
+            "text": "Windows"
+          },
+          {
+            "id": "B",
+            "text": "Ubuntu Linux"
+          },
+          {
+            "id": "C",
+            "text": "macOS"
+          },
+          {
+            "id": "D",
+            "text": "Red Hat Enterprise"
+          }
+        ],
+        "correctOptionId": "C"
+      }
+    ]
+  }
+]
